@@ -12,13 +12,11 @@ function login(event) {
     localStorage.setItem("logged", "true");
     localStorage.setItem("currentUser", valid.user);
     localStorage.setItem("currentRole", valid.role);
-    window.location.href = "../../index.html";
+    window.location.href = "/index.html";
+
   } else {
     const errorBox = document.getElementById("loginError");
     errorBox.style.display = "block";
     errorBox.textContent = "Usuario o contraseña incorrectos";
   }
 }
-
-
-
