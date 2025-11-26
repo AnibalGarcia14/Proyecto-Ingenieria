@@ -472,7 +472,7 @@
         return;
       }
 
-      let csv = 'Fecha,Producto,Cantidad,Precio Unitario,Total\n';
+      let csv = 'Fecha, Producto, Cantidad, Precio Unitario, Total\n';
       db.sales.forEach(s => {
         csv += `"${s.date}","${s.productName}",${s.qty},${s.price},${s.total}\n`;
       });

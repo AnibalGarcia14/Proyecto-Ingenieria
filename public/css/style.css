@@ -114,9 +114,12 @@ header {
     to { opacity: 1; transform: translateY(0); }
 }
 
+.titulo {
+    text-align: center; 
+}
+
 .titulo h1 {
-    margin-left: auto;
-    text-align: center;
+    margin: 0; 
 }
 
 h2 {
