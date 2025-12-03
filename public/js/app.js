@@ -859,70 +859,80 @@ function deleteLocalBackup(index) {
 
 
 // ================================
-// 7) BACKUP EN LA NUBE (GitHub Gist Anónimo)
+// 7) BACKUP EN LA NUBE (Firebase Storage - Privado)
 // ================================
 
+const FIREBASE_BUCKET = "inventario-sync-97a49.firebasestorage.app";
+
+// Generar nombre del archivo único
+function generateBackupFileName() {
+  const date = new Date().toISOString().replace(/[:.]/g, "-");
+  return `backup-${date}.json`;
+}
+
 /**
- * Crea un backup en la nube usando un Gist anónimo
+ * SUBIR BACKUP PRIVADO A FIREBASE STORAGE
  */
 async function backupDataCloud() {
-  const payload = {
-    description: "Backup Sistema Inventario - Ingeniería",
-    public: false, // Gist oculto
-    files: {
-      "backup.json": {
-        content: JSON.stringify({
-          date: new Date().toLocaleString(),
-          products: db.products,
-          sales: db.sales,
-          faults: db.faults,
-          feedback: db.feedback,
-          users: db.users
-        }, null, 2)
-      }
-    }
+  const fileName = generateBackupFileName();
+  const backupData = {
+    date: new Date().toLocaleString(),
+    products: db.products,
+    sales: db.sales,
+    faults: db.faults,
+    feedback: db.feedback,
+    users: db.users
   };
 
   try {
-    const res = await fetch("https://api.github.com/gists", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch(
+      `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_BUCKET}/o?name=${fileName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(backupData)
+      }
+    );
 
     const data = await res.json();
 
-    if (!data.html_url) {
+    if (!data.name) {
+      console.error(data);
       alert("❌ Error subiendo respaldo");
       return;
     }
 
-    // Guardamos referencia local al Gist
+    // Guardamos referencia local
     if (!db.cloudBackups) db.cloudBackups = [];
     db.cloudBackups.push({
-      date: new Date().toLocaleString(),
-      url: data.html_url,
-      raw: data.files["backup.json"].raw_url
+      date: backupData.date,
+      file: data.name,
+      url: data.mediaLink // privado, requiere token si se activa
     });
 
     db.save();
-
     updateCloudBackupList();
 
-    alert("✅ Respaldo subido a la nube con éxito");
+    alert("✅ Respaldo subido correctamente a Firebase Storage");
 
   } catch (err) {
-    alert("❌ Error de red subiendo respaldo");
     console.error(err);
+    alert("❌ Error de red subiendo respaldo");
   }
 }
 
 /**
- * Descarga y restaura cualquier respaldo cloud
+ * DESCARGAR BACKUP PRIVADO DESDE FIREBASE STORAGE
  */
-async function restoreDataCloud(rawUrl) {
+async function restoreDataCloud(fileName) {
   try {
-    const response = await fetch(rawUrl);
-    const backup = await response.json();
+    const res = await fetch(
+      `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_BUCKET}/o/${encodeURIComponent(fileName)}?alt=media`
+    );
+
+    const backup = await res.json();
 
     if (!confirm("¿Restaurar esta copia desde la nube?")) return;
 
@@ -934,7 +944,7 @@ async function restoreDataCloud(rawUrl) {
 
     db.save();
 
-    // Refrescar módulos
+    // Recargar todos los módulos
     loadProducts();
     loadSales();
     loadInventory();
@@ -947,13 +957,13 @@ async function restoreDataCloud(rawUrl) {
     alert("✅ Datos restaurados desde la nube");
 
   } catch (err) {
-    alert("❌ Error restaurando respaldo de la nube");
     console.error(err);
+    alert("❌ Error restaurando respaldo");
   }
 }
 
 /**
- * Listado de respaldos cloud creados desde la app
+ * LISTAR RESPALDOS EN LA INTERFAZ
  */
 function updateCloudBackupList() {
   const container = document.getElementById("backupCloudList");
@@ -961,7 +971,7 @@ function updateCloudBackupList() {
   if (!db.cloudBackups || db.cloudBackups.length === 0) {
     container.innerHTML = `
       <div class="alert warning">
-        ⚠️ No hay respaldos en la nube
+        No hay respaldos en la nube
       </div>
     `;
     return;
@@ -971,7 +981,7 @@ function updateCloudBackupList() {
     <table>
       <tr>
         <th>Fecha</th>
-        <th>Descargar</th>
+        <th>Archivo</th>
         <th>Acción</th>
       </tr>
   `;
@@ -980,11 +990,9 @@ function updateCloudBackupList() {
     html += `
       <tr>
         <td>${b.date}</td>
+        <td>${b.file}</td>
         <td>
-          <a href="${b.url}" target="_blank">Ver en GitHub</a>
-        </td>
-        <td>
-          <button class="btn secondary" onclick="restoreDataCloud('${b.raw}')">
+          <button class="btn secondary" onclick="restoreDataCloud('${b.file}')">
             Restaurar
           </button>
         </td>
@@ -996,6 +1004,7 @@ function updateCloudBackupList() {
 
   container.innerHTML = html;
 }
+
 
 
 
@@ -1399,3 +1408,43 @@ async function listCloudBackups() {
 setInterval(() => {
   uploadCloudBackup();
 }, 90000);
+
+
+
+// =========================
+// EXPONER FUNCIONES AL WINDOW
+// NECESARIO PORQUE SE USA type="module"
+// =========================
+
+// Entrada
+window.addProduct = addProduct;
+window.recordSale = recordSale;
+window.loadProducts = loadProducts;
+window.loadSales = loadSales;
+window.deleteProductConfirm = deleteProductConfirm;
+window.deleteSaleConfirm = deleteSaleConfirm;
+
+// Procesos
+window.filterInventory = filterInventory;
+window.loadInventory = loadInventory;
+
+// Salidas
+window.exportReport = exportReport;
+
+// Control
+window.validateData = validateData;
+window.backupData = backupData;
+window.restoreData = restoreData;
+window.sendFeedback = sendFeedback;
+
+// Mantenimiento
+window.registerFault = registerFault;
+window.deleteFault = deleteFault;
+window.loadFaults = loadFaults;
+
+// Usuarios
+window.createUser = createUser;
+
+// Navegación/Seguridad
+window.switchSection = switchSection;
+window.logout = logout;
