@@ -1,71 +1,73 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi negocio al dia</title>
+  <title>Mi negocio al día</title>
+
   <link rel="stylesheet" href="/css/style.css">
 
+  <!-- jsPDF + AutoTable (solo una vez) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 
 <body>
 
+  <!-- Control de login -->
   <script>
-
     if (localStorage.getItem("logged") !== "true") {
       window.location.href = "/login/login.html";
     }
   </script>
 
-    <script>
+  <!-- Control de permisos -->
+  <script>
+    const role = localStorage.getItem("currentRole");
 
-      const role = localStorage.getItem("currentRole");
+    document.addEventListener("DOMContentLoaded", () => {
+      if (role === "user") {
+        document.querySelector('[data-target="procesos"]').style.display = "none";
+        document.querySelector('[data-target="control"]').style.display = "none";
+        document.querySelector('[data-target="usuarios"]').style.display = "none";
 
-      document.addEventListener("DOMContentLoaded", () => {
-        if (role === "user") {
-          document.querySelector('[data-target="procesos"]').style.display = "none";
-          document.querySelector('[data-target="control"]').style.display = "none";
-          document.querySelector('[data-target="usuarios"]').style.display = "none";
-
-          document.getElementById("procesos").style.display = "none";
-          document.getElementById("control").style.display = "none";
-          document.getElementById("usuarios").style.display = "none";
-        }
-      });
-    </script>
-
-
+        document.getElementById("procesos").style.display = "none";
+        document.getElementById("control").style.display = "none";
+        document.getElementById("usuarios").style.display = "none";
+      }
+    });
+  </script>
 
   <!-- MENÚ LATERAL -->
   <aside>
-
     <div class="logo">🧭 Gestión</div>
     <div class="menu">
       <button class="menu-btn active" data-target="entrada">📥 Entrada</button>
       <button class="menu-btn" data-target="procesos">⚙️ Procesos</button>
       <button class="menu-btn" data-target="salidas">📤 Salidas</button>
       <button class="menu-btn" data-target="control">🧰 Control</button>
+      <button class="menu-btn" data-target="usuarios">👥 Usuarios</button>
     </div>
-
   </aside>
 
   <!-- CONTENIDO PRINCIPAL -->
   <main>
 
     <header>
-
-      <h1>Mi negocio al dia </h1>
+      <h1>Mi negocio al día</h1>
 
       <div class="user-info">
         <button class="btn small-btn" onclick="switchSection('usuarios')" id="headerUser"></button>
         <a href="#" onclick="logout()" class="logout-link">Logout</a>
       </div>
-
     </header>
 
     <div class="content">
-      
-      <!-- ===== MÓDULO 1: ENTRADA ===== -->
+
+      <!-- =============================== -->
+      <!-- MÓDULO 1: ENTRADA -->
+      <!-- =============================== -->
       <section id="entrada" class="section active">
         <h2>📥 Módulo 1: Entrada</h2>
         <p>Registro y gestión de información inicial del sistema.</p>
@@ -133,7 +135,9 @@
         <div id="salesTable"></div>
       </section>
 
-      <!-- ===== MÓDULO 2: PROCESOS ===== -->
+      <!-- =============================== -->
+      <!-- MÓDULO 2: PROCESOS -->
+      <!-- =============================== -->
       <section id="procesos" class="section">
         <h2>⚙️ Módulo 2: Procesos del Sistema</h2>
         <p>Análisis y transformación de información.</p>
@@ -144,7 +148,6 @@
         <h3>📦 Estado del Inventario</h3>
 
         <div class="form-group">
-
           <input type="text" id="searchProduct" placeholder="Buscar producto...">
           <button class="btn" onclick="filterInventory()">Buscar</button>
           <button class="btn secondary" onclick="loadInventory()">Ver Todo</button>
@@ -156,7 +159,9 @@
         <div id="cashFlowTable"></div>
       </section>
 
-      <!-- ===== MÓDULO 3: SALIDAS ===== -->
+      <!-- =============================== -->
+      <!-- MÓDULO 3: SALIDAS -->
+      <!-- =============================== -->
       <section id="salidas" class="section">
         <h2>📤 Módulo 3: Salidas</h2>
         <p>Reportes, alertas y estadísticas.</p>
@@ -168,11 +173,9 @@
 
         <div class="card-container">
           <div class="card">
-
             <h4>Total de Ventas</h4>
             <div class="card-value" id="totalSales">$0</div>
             <p id="totalSalesCount">0 transacciones</p>
-
           </div>
 
           <div class="card">
@@ -186,7 +189,6 @@
             <div class="card-value" id="lowStockCount">0</div>
             <p>Requieren reorden</p>
           </div>
-
         </div>
 
         <h3>📋 Reporte de Transacciones</h3>
@@ -195,7 +197,9 @@
         <button class="btn" onclick="exportReport()" style="margin-top: 20px;">📥 Descargar Reporte (CSV)</button>
       </section>
 
+      <!-- =============================== -->
       <!-- MÓDULO 4: CONTROL -->
+      <!-- =============================== -->
       <section id="control" class="section">
         <h2>🧰 Módulo 4: Sistema de Control</h2>
         <p>Validaciones, seguridad y mantenimiento.</p>
@@ -213,84 +217,100 @@
         </div>
         <div id="backupInfo"></div>
 
-
-
         <h3>📝 Feedback del Usuario</h3>
-
         <div class="form-group">
+          <label>Tipo de Mensaje *</label>
+          <select id="feedbackType">
+            <option>Sugerencia</option>
+            <option>Error</option>
+            <option>Mejora</option>
+          </select>
 
-          <div style="grid-column: 1/-1;">
-            <label>Tipo de Mensaje *</label>
-            <select id="feedbackType">
-              <option>Sugerencia</option>
-              <option>Error</option>
-              <option>Mejora</option>
-            </select>
-          </div>
-
-          <div style="grid-column: 1/-1;">
-            <label>Mensaje *</label>
-            <textarea id="feedbackMsg" placeholder="Describe tu comentario..." rows="4"></textarea>
-          </div>
-
-          <button class="btn" onclick="sendFeedback()" style="grid-column: 1/-1;">Enviar Feedback</button>
-
+          <label>Mensaje *</label>
+          <textarea id="feedbackMsg" placeholder="Describe tu comentario..." rows="4"></textarea>
         </div>
 
+        <button class="btn" onclick="sendFeedback()">Enviar Feedback</button>
+
+        <!-- ===================== -->
+        <!-- Mantenimiento -->
+        <!-- ===================== -->
         <h3>🔧 Mantenimiento</h3>
+
         <div class="form-group">
-          <button class="btn danger" onclick="clearAllData()" style="grid-column: 1/-1;">⚠️ Limpiar Todos los Datos (Irreversible)</button>
+          <label>Descripción del fallo</label>
+          <textarea id="faultDesc" placeholder="Describe el problema..."></textarea>
         </div>
+
+        <div class="form-group">
+          <label>Evidencia (Imagen)</label>
+          <input type="file" id="faultImage" accept="image/*">
+        </div>
+
+        <!-- Error 2 corregido: función correcta -->
+        <button class="btn primary" onclick="registerFault()">Guardar Falla</button>
+
+        <h3>Historial de Fallos</h3>
+        <div id="faultsTable"></div>
+
       </section>
 
-
-
-      <!--  MÓDULO 5: USUARIOS -->
+      <!-- =============================== -->
+      <!-- MÓDULO 5: USUARIOS -->
+      <!-- =============================== -->
       <section id="usuarios" class="section">
-      <h2>👥 Administración de Usuarios</h2>
-      <p>Gestiona las cuentas registradas en el sistema.</p>
+        <h2>👥 Administración de Usuarios</h2>
 
-      <h3>Usuarios Registrados</h3>
-      <div id="usersTable"></div>
+        <h3>Usuarios Registrados</h3>
+        <div id="usersTable"></div>
 
-      <h3>Crear Nuevo Usuario</h3>
-      <div class="form-group">
-        <div>
+        <h3>Crear Nuevo Usuario</h3>
+
+        <div class="form-group">
           <label>Usuario</label>
-          <input type="text" id="newUser" placeholder="Nombre de usuario">
-        </div>
+          <input type="text" id="newUser">
 
-        <div>
           <label>Correo</label>
-          <input type="email" id="newEmail" placeholder="Correo electrónico">
-        </div>
+          <input type="email" id="newEmail">
 
-        <div>
           <label>Contraseña</label>
-          <input type="password" id="newPass" placeholder="Contraseña">
-        </div>
+          <input type="password" id="newPass">
 
-        <div>
-          
           <label>Rol</label>
           <select id="newRole">
             <option value="admin">Administrador</option>
             <option value="user">Vendedor</option>
           </select>
-
         </div>
 
-        <button class="btn" onclick="createUser()" style="grid-column: 1/-1;">Crear Usuario</button>
-      </div>
-    </section>
-
+        <button class="btn" onclick="createUser()">Crear Usuario</button>
       </section>
-
 
     </div>
   </main>
 
-<script src="/js/app.js"></script>
+  <!-- =========================== -->
+  <!-- Inicialización Firebase FIX -->
+  <!-- =========================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+
+    window.firebaseConfig = {
+      apiKey: "AIzaSyBjxbJRjZOlIi9j3gh6_i8jXiehdOW48Jw",
+      authDomain: "inventario-sync-97a49.firebaseapp.com",
+      projectId: "inventario-sync-97a49",
+      storageBucket: "inventario-sync-97a49.firebasestorage.app",
+      messagingSenderId: "347862613736",
+      appId: "1:347862613736:web:afd4b1ac02b0c4ca31535d"
+    };
+
+    const app = initializeApp(window.firebaseConfig);
+    window.storage = getStorage(app);
+  </script>
+
+  <!-- app.js como módulo -->
+  <script type="module" src="/js/app.js"></script>
 
 </body>
 </html>
