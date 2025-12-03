@@ -1411,6 +1411,132 @@ setInterval(() => {
 
 
 
+// ================================
+// 11) FEEDBACK DEL USUARIO
+// ================================
+
+function sendFeedback() {
+  const type = document.getElementById('feedbackType').value;
+  const msg = document.getElementById('feedbackMsg').value.trim();
+
+  if (!msg) {
+    alert('❌ Debes escribir un mensaje');
+    return;
+  }
+
+  db.addFeedback(type, msg);
+
+  document.getElementById('feedbackMsg').value = '';
+  
+  alert('✅ Feedback enviado correctamente');
+}
+
+
+// ================================
+// 12) GESTIÓN DE USUARIOS
+// ================================
+
+function loadUsers() {
+  const table = document.getElementById('usersTable');
+
+  if (!db.users.length) {
+    table.innerHTML = '<div class="empty-state">No hay usuarios registrados</div>';
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Usuario</th>
+        <th>Correo</th>
+        <th>Rol</th>
+        <th>Acciones</th>
+      </tr>
+  `;
+
+  db.users.forEach((u, index) => {
+    html += `
+      <tr>
+        <td>${u.user}</td>
+        <td>${u.email}</td>
+        <td>${u.role === 'admin' ? '👑 Admin' : '👤 Vendedor'}</td>
+        <td>
+          <button class="btn danger" onclick="deleteUser(${index})">Eliminar</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += '</table>';
+  table.innerHTML = html;
+}
+
+function createUser() {
+  const user = document.getElementById('newUser').value.trim();
+  const email = document.getElementById('newEmail').value.trim();
+  const pass = document.getElementById('newPass').value.trim();
+  const role = document.getElementById('newRole').value;
+
+  if (!user || !email || !pass) {
+    alert('❌ Completa todos los campos');
+    return;
+  }
+
+  db.addUser({ user, email, pass, role });
+
+  document.getElementById('newUser').value = '';
+  document.getElementById('newEmail').value = '';
+  document.getElementById('newPass').value = '';
+
+  loadUsers();
+
+  alert('✅ Usuario creado exitosamente');
+}
+
+function deleteUser(index) {
+  if (!confirm('¿Eliminar este usuario?')) return;
+
+  db.users.splice(index, 1);
+  db.save();
+  loadUsers();
+}
+
+
+// ================================
+// 13) FUNCIÓN GENÉRICA PARA EXPORTAR REPORTES
+// ================================
+
+function exportReport() {
+  const options = [
+    'Ventas (CSV)',
+    'Ventas (PDF)',
+    'Inventario (CSV)',
+    'Inventario (PDF)',
+    'Flujo de Caja (CSV)',
+    'Flujo de Caja (PDF)',
+    'Fallas (CSV)',
+    'Fallas (PDF)'
+  ];
+
+  const choice = prompt(
+    'Selecciona el tipo de reporte:\n\n' +
+    options.map((o, i) => `${i + 1}. ${o}`).join('\n')
+  );
+
+  switch (choice) {
+    case '1': exportSalesCSV(); break;
+    case '2': exportSalesPDF(); break;
+    case '3': exportInventoryCSV(); break;
+    case '4': exportInventoryPDF(); break;
+    case '5': exportCashFlowCSV(); break;
+    case '6': exportCashFlowPDF(); break;
+    case '7': exportFaultsCSV(); break;
+    case '8': exportFaultsPDF(); break;
+    default: alert('❌ Opción inválida');
+  }
+}
+
+
 // =========================
 // EXPONER FUNCIONES AL WINDOW
 // NECESARIO PORQUE SE USA type="module"
@@ -1423,28 +1549,70 @@ window.loadProducts = loadProducts;
 window.loadSales = loadSales;
 window.deleteProductConfirm = deleteProductConfirm;
 window.deleteSaleConfirm = deleteSaleConfirm;
+window.loadSaleProductsSelect = loadSaleProductsSelect;
 
 // Procesos
 window.filterInventory = filterInventory;
 window.loadInventory = loadInventory;
+window.updateStats = updateStats;
+window.loadCashFlow = loadCashFlow;
 
 // Salidas
 window.exportReport = exportReport;
+window.updateAlerts = updateAlerts;
+window.updateSalesStats = updateSalesStats;
+window.loadReports = loadReports;
+window.exportSalesCSV = exportSalesCSV;
+window.exportSalesPDF = exportSalesPDF;
+window.exportInventoryCSV = exportInventoryCSV;
+window.exportInventoryPDF = exportInventoryPDF;
 
 // Control
 window.validateData = validateData;
-window.backupData = backupData;
-window.restoreData = restoreData;
+window.backupData = backupDataLocal;  // CORREGIDO
+window.restoreData = restoreDataLocal;  // CORREGIDO
 window.sendFeedback = sendFeedback;
-
-// Mantenimiento
 window.registerFault = registerFault;
 window.deleteFault = deleteFault;
 window.loadFaults = loadFaults;
+window.updateBackupInfo = updateBackupInfo;
+window.deleteLocalBackup = deleteLocalBackup;
+
+// Cloud
+window.uploadCloudBackup = uploadCloudBackup;
+window.downloadCloudBackup = downloadCloudBackup;
 
 // Usuarios
 window.createUser = createUser;
+window.loadUsers = loadUsers;
+window.deleteUser = deleteUser;
 
 // Navegación/Seguridad
 window.switchSection = switchSection;
 window.logout = logout;
+
+
+// ================================
+// INICIALIZACIÓN AL CARGAR LA PÁGINA
+// ================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Cargar usuario actual en header
+  const currentUser = localStorage.getItem('currentUser') || 'Usuario';
+  const headerBtn = document.getElementById('headerUser');
+  if (headerBtn) headerBtn.textContent = currentUser;
+
+  // Cargar todos los módulos
+  loadProducts();
+  loadSales();
+  loadSaleProductsSelect();
+  loadInventory();
+  updateStats();
+  loadCashFlow();
+  updateAlerts();
+  updateSalesStats();
+  loadReports();
+  loadFaults();
+  updateBackupInfo();
+  loadUsers();
+});
